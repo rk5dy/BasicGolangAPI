@@ -9,5 +9,7 @@ import (
 func main() {
   router := httprouter.New()
   router.GET("/", yaml.Index)
-  http.ListenAndServe(":8080", router);
+  router.GET("/yaml/:id", yaml.ArtilleryFire)
+
+  http.ListenAndServe(":6060", router);
 }

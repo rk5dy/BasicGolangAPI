@@ -16,3 +16,12 @@ func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
     fmt.Fprintf(w, "%s %s", yaml.fileName, yaml.lastUpdated.String())
   }
 }
+
+func ArtilleryFire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+  log, err := PutYaml(ps)
+  if err != nil {
+    http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+    return
+  }
+  fmt.Println(log.logContent)
+}

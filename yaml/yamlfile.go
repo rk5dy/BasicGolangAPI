@@ -1,14 +1,23 @@
 package yaml
 
 import (
+  "bytes"
   "fmt"
   "time"
   "app/config"
+  "os/exec"
+  "github.com/julienschmidt/httprouter"
 )
 
 type YamlFile struct {
   fileName string
   lastUpdated time.Time
+}
+
+type Log struct {
+  fileName string
+  logDate time.Time
+  logContent string
 }
 
 func AllYamls() ([]YamlFile, error) {
@@ -36,4 +45,28 @@ func AllYamls() ([]YamlFile, error) {
   }
 
   return yFiles, nil
+}
+
+func PutYaml(ps httprouter.Params) (Log, error) {
+  log := Log{}
+  var out bytes.Buffer
+  var err error
+  // cmd := exec.Command("ls")
+  cmd := exec.Command("./artillery/bin/artillery run " + ps.ByName("id"))
+  cmd.Stdout = &out
+  err = cmd.Run()
+  if err != nil {
+    fmt.Println(err)
+    return log, err
+  }
+  log.logContent = out.String()
+  log.logDate = time.Now()
+
+  _, err = config.DB.Query("INSERT INTO logs (fileName, logDate, logContent) VALUES ($1, $2, $3);", ps.ByName("id"), log.logContent, log.logDate)
+  if err != nil {
+    fmt.Println(err)
+    return log, err
+  }
+
+  return log, nil
 }
