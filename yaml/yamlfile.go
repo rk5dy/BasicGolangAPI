@@ -1,10 +1,13 @@
 package yaml
 
 import (
+  "bytes"
   "fmt"
   "time"
+  "io"
   "app/config"
   "errors"
+  "mime/multipart"
   "net/http"
 )
 
@@ -49,19 +52,42 @@ func AllYamls() ([]YamlFile, error) {
 
 func PutYaml(req *http.Request) (YamlFile, error) {
   yFile := YamlFile{}
+  yFile.lastUpdated = time.Now()
 
-  f, h, err := req.FormFile("q")
+  //get file
+  f, h, err := req.FormFile("yaml")
 	if err != nil {
 		return yFile, err
 	}
-	defer f.Close()
-
-	// for your information
-	fmt.Println("\nfile:", f, "\nheader:", h, "\nerr", err)
   yFile.fileName = h.Filename
-  yFile.lastUpdated = time.Now()
-  yFile.fileNameOnDisk = "tmp"
 
+	defer f.Close()
+  var part io.Writer
+  body := &bytes.Buffer{}
+  writer := multipart.NewWriter(body)
+  part, err = writer.CreateFormFile("file", yFile.fileName)
+  if err != nil {
+      return yFile, err
+  }
+  _, err = io.Copy(part, f)
+  err = writer.Close()
+
+  request, err := http.NewRequest("POST", "localhost:5000/upload", body)
+  request.Header.Set("Content-Type", writer.FormDataContentType())
+
+  client := &http.Client{}
+  resp, err := client.Do(request)
+  if err != nil {
+      return yFile, err
+  } else {
+    body := &bytes.Buffer{}
+    _, err := body.ReadFrom(resp.Body)
+    if err != nil {
+      return yFile, err
+    }
+    resp.Body.Close()
+    yFile.fileNameOnDisk = body.String()
+  }
   // insert values
 	_, err = config.DB.Exec("INSERT INTO yamls (fileName, fileNameOnDisk, lastUpdated) VALUES ($1, $2, $3)", yFile.fileName, yFile.fileNameOnDisk, yFile.lastUpdated)
 	if err != nil {
