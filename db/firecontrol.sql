@@ -4,6 +4,7 @@ alter user admin with superuser;
 
 CREATE TABLE yamls(
   fileName varchar(50),
+  fileNameOnDisk varchar(50),
   lastUpdated Date
 );
 
@@ -12,7 +13,7 @@ CREATE TABLE logs(
   logDate Date,
   logContent varchar(10000));
 
-INSERT INTO yamls VALUES ('hello.yml', '10-12-2015');
+INSERT INTO yamls VALUES ('hello.yml', 'lolol', '10-12-2015');
 INSERT INTO logs VALUES ('hello.yml', '10-15-2017', 'this is log content');
 select * from yamls;
 select * from logs;

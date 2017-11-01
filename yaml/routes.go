@@ -13,15 +13,15 @@ func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
     return
   }
   for _,yaml := range yamls {
-    fmt.Fprintf(w, "%s %s", yaml.fileName, yaml.lastUpdated.String())
+    fmt.Fprintf(w, "%s %s %s", yaml.fileName, yaml.fileNameOnDisk, yaml.lastUpdated.String())
   }
 }
 
-func ArtilleryFire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-  log, err := PutYaml(ps)
+func Upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+  yaml, err := PutYaml(r)
   if err != nil {
     http.Error(w, http.StatusText(500), http.StatusInternalServerError)
     return
   }
-  fmt.Println(log.logContent)
+  fmt.Println(yaml.fileName)
 }

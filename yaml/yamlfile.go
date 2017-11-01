@@ -1,16 +1,16 @@
 package yaml
 
 import (
-  "bytes"
   "fmt"
   "time"
   "app/config"
-  "os/exec"
-  "github.com/julienschmidt/httprouter"
+  "errors"
+  "net/http"
 )
 
 type YamlFile struct {
   fileName string
+  fileNameOnDisk string
   lastUpdated time.Time
 }
 
@@ -31,7 +31,7 @@ func AllYamls() ([]YamlFile, error) {
   yFiles := make([]YamlFile, 0)
   for rows.Next() {
     yFile := YamlFile{}
-    err := rows.Scan(&yFile.fileName, &yFile.lastUpdated) // order matters
+    err := rows.Scan(&yFile.fileName, &yFile.fileNameOnDisk, &yFile.lastUpdated) // order matters
     if err != nil {
       fmt.Println(err)
       return nil, err
@@ -47,26 +47,26 @@ func AllYamls() ([]YamlFile, error) {
   return yFiles, nil
 }
 
-func PutYaml(ps httprouter.Params) (Log, error) {
-  log := Log{}
-  var out bytes.Buffer
-  var err error
-  // cmd := exec.Command("ls")
-  cmd := exec.Command("./artillery/bin/artillery run " + ps.ByName("id"))
-  cmd.Stdout = &out
-  err = cmd.Run()
-  if err != nil {
-    fmt.Println(err)
-    return log, err
-  }
-  log.logContent = out.String()
-  log.logDate = time.Now()
+func PutYaml(req *http.Request) (YamlFile, error) {
+  yFile := YamlFile{}
 
-  _, err = config.DB.Query("INSERT INTO logs (fileName, logDate, logContent) VALUES ($1, $2, $3);", ps.ByName("id"), log.logContent, log.logDate)
-  if err != nil {
-    fmt.Println(err)
-    return log, err
-  }
+  f, h, err := req.FormFile("q")
+	if err != nil {
+		return yFile, err
+	}
+	defer f.Close()
 
-  return log, nil
+	// for your information
+	fmt.Println("\nfile:", f, "\nheader:", h, "\nerr", err)
+  yFile.fileName = h.Filename
+  yFile.lastUpdated = time.Now()
+  yFile.fileNameOnDisk = "tmp"
+
+  // insert values
+	_, err = config.DB.Exec("INSERT INTO yamls (fileName, fileNameOnDisk, lastUpdated) VALUES ($1, $2, $3)", yFile.fileName, yFile.fileNameOnDisk, yFile.lastUpdated)
+	if err != nil {
+		return yFile, errors.New("500. Internal Server Error." + err.Error())
+	}
+
+	return yFile, nil
 }

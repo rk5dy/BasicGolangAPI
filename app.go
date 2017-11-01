@@ -9,7 +9,7 @@ import (
 func main() {
   router := httprouter.New()
   router.GET("/", yaml.Index)
-  router.GET("/yaml/:id", yaml.ArtilleryFire)
+  router.POST("/yaml", yaml.Upload)
 
   http.ListenAndServe(":6060", router);
 }
