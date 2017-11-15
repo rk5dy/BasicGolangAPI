@@ -1,8 +1,14 @@
-FROM golang:1.9.1-alpine3.6
+FROM golang:1.9.2-stretch
 
-RUN apk --update add git openssh curl make gcc g++ python linux-headers binutils-gold gnupg libstdc++ && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm /var/cache/apk/*
+ENV VERSION=v9.2.0 YARN_VERSION=latest
+
+# For base builds
+# ENV CONFIG_FLAGS="--fully-static --without-npm" DEL_PKGS="libstdc++" RM_DIRS=/usr/include
+
+RUN apt-get update && apt-get install -y sudo  \
+  && curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash - \
+  && apt-get install -y nodejs \
+  && npm i -g artillery
 
 WORKDIR /go/src/app
 
